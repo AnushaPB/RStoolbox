@@ -161,7 +161,20 @@ ggRGB <- function(img, r = 3, g = 2, b = 1, scale, maxpixels = 500000, stretch =
         ## Set-up plot       
         ## I prefer annotate_raster instead of geom_raster or tile to keep the fill scale free for additional rasters        
         if(annotation) {           
-            dz <- matrix(z, nrow=nrow(rr), ncol=ncol(rr), byrow = TRUE)  
+            # Convert raster to data frame with coordinates and assign an ID (used later for ordering)
+            full_raster_df <- as.data.frame(rr, xy = TRUE, na.rm = FALSE)
+            full_raster_df$ID <- 1:ncell(rr)
+
+            # Merge with df_raster and keep all rows from full_raster_df
+            full_raster_df <- merge(full_raster_df, df_raster, by = c("x", "y"), all.x = TRUE)
+
+            # Order by ID
+            full_raster_df <- full_raster_df[order(full_raster_df$ID),]
+
+            # Create matrix for annotation_raster
+            dz <- matrix(full_raster_df[["fill"]], nrow=nrow(rr), ncol=ncol(rr), byrow = TRUE)
+
+            # Use matrix in annotation_raster
             p <- annotation_raster(raster = dz, xmin = ex[1], xmax = ex[2], ymin = ex[3], ymax = ex[4], interpolate = FALSE)
             if(!ggLayer) {
                 p <- ggplot() + p + geom_blank(data = df, aes(x = x,y = y))
